@@ -26,6 +26,15 @@ final class DefaultExceptionMapper implements ExceptionMapperInterface
             );
         }
 
+        // Auth exceptions from linkedcode/auth-middleware
+        if ($e->getCode() === 401 || $e->getCode() === 403) {
+            return new Problem(
+                type: 'about:blank',
+                title: $e->getMessage(),
+                status: $e->getCode(),
+            );
+        }
+
         return new Problem(
             type: 'about:blank',
             title: 'Internal Server Error',
