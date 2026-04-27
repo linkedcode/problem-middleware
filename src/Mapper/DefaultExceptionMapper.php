@@ -8,6 +8,7 @@ use Throwable;
 use Slim\Exception\HttpException as SlimHttpException;
 use Linkedcode\Middleware\Problem\Problem;
 use Linkedcode\Middleware\Problem\ProblemInterface;
+use Linkedcode\Middleware\Problem\Exception\DomainExceptionInterface;
 use Linkedcode\Middleware\Problem\Exception\ProblemException;
 
 final class DefaultExceptionMapper implements ExceptionMapperInterface
@@ -16,6 +17,15 @@ final class DefaultExceptionMapper implements ExceptionMapperInterface
     {
         if ($e instanceof ProblemException) {
             return $e->toProblem();
+        }
+
+        if ($e instanceof DomainExceptionInterface) {
+            return new Problem(
+                type: $e->getProblemType(),
+                title: $e->getProblemTitle(),
+                status: $e->getHttpStatus(),
+                detail: $e->getMessage(),
+            );
         }
 
         if ($e instanceof SlimHttpException) {
