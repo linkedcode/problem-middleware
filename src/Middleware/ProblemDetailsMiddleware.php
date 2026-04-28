@@ -25,7 +25,7 @@ final class ProblemDetailsMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         } catch (Throwable $e) {
             $problem = $this->mapper->map($e);
-            return $this->responseFactory->create($problem);
+            return $this->responseFactory->create($problem, $request);
         }
     }
 }

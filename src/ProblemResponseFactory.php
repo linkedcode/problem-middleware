@@ -6,25 +6,23 @@ namespace Linkedcode\Middleware\Problem;
 
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 final class ProblemResponseFactory
 {
     public function __construct(
         private readonly ResponseFactoryInterface $responseFactory,
-        private readonly ProblemNormalizer $normalizer = new ProblemNormalizer()
+        private readonly ProblemNormalizer $normalizer = new ProblemNormalizer(),
+        private readonly ContentNegotiator $negotiator = new ContentNegotiator(),
     ) {}
 
-    public function create(ProblemInterface $problem): ResponseInterface
+    public function create(ProblemInterface $problem, ServerRequestInterface $request): ResponseInterface
     {
+        $serializer = $this->negotiator->negotiate($request);
+
         $response = $this->responseFactory->createResponse($problem->getStatus());
+        $response->getBody()->write($serializer->serialize($this->normalizer->normalize($problem)));
 
-        $payload = json_encode(
-            $this->normalizer->normalize($problem),
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-        );
-
-        $response->getBody()->write($payload ?: '{}');
-
-        return $response->withHeader('Content-Type', 'application/problem+json');
+        return $response->withHeader('Content-Type', $serializer->contentType());
     }
 }

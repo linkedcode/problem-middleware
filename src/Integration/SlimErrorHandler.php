@@ -40,6 +40,6 @@ final class SlimErrorHandler
             );
         }
 
-        return $this->responseFactory->create($problem);
+        return $this->responseFactory->create($problem, $request);
     }
 }
