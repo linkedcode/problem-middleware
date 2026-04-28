@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Linkedcode\Middleware\Problem\Exception;
 
-interface DomainExceptionInterface extends \Throwable
+use Throwable;
+
+interface DomainExceptionInterface extends Throwable
 {
     public function getHttpStatus(): int;
 

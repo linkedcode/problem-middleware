@@ -8,6 +8,7 @@ use Throwable;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Linkedcode\Middleware\Problem\Mapper\ExceptionMapperInterface;
+use Linkedcode\Middleware\Problem\Problem;
 use Linkedcode\Middleware\Problem\ProblemResponseFactory;
 
 final class SlimErrorHandler
@@ -29,7 +30,7 @@ final class SlimErrorHandler
             $extensions = $problem->getExtensions();
             $extensions['trace'] = $exception->getTraceAsString();
 
-            $problem = new \Linkedcode\Middleware\Problem\Problem(
+            $problem = new Problem(
                 $problem->getType(),
                 $problem->getTitle(),
                 $problem->getStatus(),
