@@ -18,7 +18,8 @@ use Throwable;
  *  1. ProblemException — las excepciones de este paquete, que ya traen status.
  *  2. Las excepciones de auth-middleware (401 / 403).
  *  3. Las interfaces de excepción del kernel (linkedcode/ddd).
- *  4. InvalidArgumentException → 422, y cualquier otra cosa → 500.
+ *  4. InvalidArgumentException y los errores de tipo o valor de PHP → 422, y
+ *     cualquier otra cosa → 500.
  *
  * Los grupos 2 y 3 se reconocen por nombre para no acoplar este middleware a
  * esos paquetes: quien no los tenga instalados simplemente nunca hace match.
@@ -28,6 +29,15 @@ use Throwable;
  */
 class DefaultExceptionMapper implements ExceptionMapperInterface
 {
+    /**
+     * Detail de los 422 por tipo o valor inválido. Es fijo porque el mensaje
+     * original de un TypeError expone la firma del método y la ruta del archivo
+     * que lo llamó. Protegido para que un host que sobreescriba este caso pueda
+     * reusar el mismo texto en vez de inventar otro.
+     */
+    protected const MALFORMED_INPUT_DETAIL =
+        'Some of the submitted data has an invalid type or value.';
+
     /**
      * Interfaz del kernel => [status, title].
      *
@@ -86,6 +96,30 @@ class DefaultExceptionMapper implements ExceptionMapperInterface
 
         if ($e instanceof \InvalidArgumentException) {
             return new Problem('about:blank', 'Unprocessable Entity', 422, $e->getMessage());
+        }
+
+        // TypeError y ValueError heredan de Error, no de Exception, así que no
+        // los alcanza ningún brazo anterior y caerían en el 500. Son lo que PHP
+        // lanza cuando un dato llega con el tipo equivocado al borde tipado del
+        // dominio —un método que declara int, un enum::from() con un valor que
+        // no es caso—: bajo strict_types eso es culpa del payload y no del
+        // servidor, así que corresponde 422.
+        //
+        // No se captura Error entero a propósito: ArithmeticError,
+        // DivisionByZeroError y UnhandledMatchError son bugs de la aplicación,
+        // no datos mal formados, y tienen que seguir saliendo como 500.
+        //
+        // El detail es fijo y no reenvía getMessage(): el mensaje de un
+        // TypeError nombra la firma del método y la ruta del archivo que lo
+        // llamó, y ProblemDetailsMiddleware sólo limpia los 5xx. Reenviarlo en
+        // un 422 filtraría internals por la puerta que el scrubbing deja abierta.
+        if ($e instanceof \TypeError || $e instanceof \ValueError) {
+            return new Problem(
+                'about:blank',
+                'Unprocessable Entity',
+                422,
+                self::MALFORMED_INPUT_DETAIL,
+            );
         }
 
         return new Problem('about:blank', 'Internal Server Error', 500, $e->getMessage());

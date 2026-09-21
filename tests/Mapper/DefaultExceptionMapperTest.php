@@ -79,6 +79,48 @@ final class DefaultExceptionMapperTest extends TestCase
         self::assertSame(500, $this->mapper->map(new \RuntimeException('boom'))->getStatus());
     }
 
+    public function test_maps_type_error_to_422(): void
+    {
+        $e = new \TypeError('Money::of(): Argument #1 ($amount) must be of type int, string given');
+
+        self::assertSame(422, $this->mapper->map($e)->getStatus());
+    }
+
+    public function test_maps_value_error_to_422(): void
+    {
+        $e = new \ValueError('"XXX" is not a valid backing value for enum Currency');
+
+        self::assertSame(422, $this->mapper->map($e)->getStatus());
+    }
+
+    /**
+     * El mensaje de un TypeError nombra la firma del método y la ruta del
+     * archivo que lo llamó. ProblemDetailsMiddleware sólo limpia los 5xx, así
+     * que un 422 que reenviara getMessage() sacaría eso al cliente.
+     */
+    public function test_type_error_detail_does_not_leak_internals(): void
+    {
+        $e = new \TypeError(
+            'Money::of(): Argument #1 must be of type int, string given, called in /var/www/app/src/X.php on line 42'
+        );
+
+        $detail = (string) $this->mapper->map($e)->getDetail();
+
+        self::assertStringNotContainsString('/var/www', $detail);
+        self::assertStringNotContainsString('Money::of', $detail);
+    }
+
+    /**
+     * Error es el padre común, pero sólo TypeError y ValueError hablan del dato
+     * que entró: el resto son bugs de la aplicación y siguen siendo 500.
+     */
+    public function test_other_php_errors_remain_500(): void
+    {
+        self::assertSame(500, $this->mapper->map(new \DivisionByZeroError('Division by zero'))->getStatus());
+        self::assertSame(500, $this->mapper->map(new \ArithmeticError('overflow'))->getStatus());
+        self::assertSame(500, $this->mapper->map(new \UnhandledMatchError('unhandled'))->getStatus());
+    }
+
     /**
      * El host hereda para lo suyo y delega el resto: es el uso previsto de esta
      * clase, y lo que evita que cada app se olvide de las interfaces del kernel.

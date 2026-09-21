@@ -36,7 +36,17 @@ Cubre cuatro familias, en orden:
 3. Las interfaces de excepción de `linkedcode/ddd`: `ValidationException` → 422
    (con los errores por campo en `errors`), `NotFoundException` → 404,
    `ForbiddenException` → 403, `ConflictException` → 409.
-4. `InvalidArgumentException` → 422 y cualquier otra cosa → 500.
+4. `InvalidArgumentException` → 422, los errores de tipo o valor de PHP
+   (`TypeError`, `ValueError`) → 422, y cualquier otra cosa → 500.
+
+`TypeError` y `ValueError` heredan de `Error`, no de `Exception`: son lo que PHP
+lanza cuando un dato llega con el tipo equivocado al borde tipado del dominio (un
+método que declara `int`, un `Enum::from()` con un valor que no es caso). Bajo
+`strict_types` eso es culpa del payload, así que corresponde 422 y no 500. Su
+`detail` es fijo y no reenvía `getMessage()`, porque el mensaje original nombra la
+firma del método y la ruta del archivo que lo llamó, y el middleware sólo limpia
+los 5xx. El resto de los `Error` —`ArithmeticError`, `DivisionByZeroError`,
+`UnhandledMatchError`— son bugs de la aplicación y siguen siendo 500.
 
 Los grupos 2 y 3 se reconocen por nombre, así que si no tenés esos paquetes
 instalados simplemente nunca hacen match: este middleware no depende de ellos.
