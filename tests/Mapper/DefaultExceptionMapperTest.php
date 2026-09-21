@@ -142,4 +142,22 @@ final class DefaultExceptionMapperTest extends TestCase
         self::assertSame(404, $mapper->map(KernelExceptions::notFound())->getStatus());
         self::assertSame(500, $mapper->map(new \RuntimeException('boom'))->getStatus());
     }
+
+    /**
+     * MALFORMED_INPUT_DETAIL es protected para que un host pueda redeclararla,
+     * típicamente para traducir el texto. Eso exige que map() la referencie con
+     * static:: y no con self::, que la resolvería siempre en esta clase y
+     * dejaría la constante del hijo sin efecto.
+     */
+    public function test_a_host_can_override_the_malformed_input_detail(): void
+    {
+        $mapper = new class extends DefaultExceptionMapper {
+            protected const MALFORMED_INPUT_DETAIL = 'Datos con un tipo o un valor que no corresponde.';
+        };
+
+        self::assertSame(
+            'Datos con un tipo o un valor que no corresponde.',
+            $mapper->map(new \TypeError('Money::of(): Argument #1 must be of type int'))->getDetail(),
+        );
+    }
 }

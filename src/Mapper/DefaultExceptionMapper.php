@@ -32,8 +32,9 @@ class DefaultExceptionMapper implements ExceptionMapperInterface
     /**
      * Detail de los 422 por tipo o valor inválido. Es fijo porque el mensaje
      * original de un TypeError expone la firma del método y la ruta del archivo
-     * que lo llamó. Protegido para que un host que sobreescriba este caso pueda
-     * reusar el mismo texto en vez de inventar otro.
+     * que lo llamó. Protegido para que un host pueda reusar el mismo texto en
+     * vez de inventar otro, o redeclararlo para traducirlo: se referencia con
+     * static:: y no con self::, así que la constante del hijo es la que manda.
      */
     protected const MALFORMED_INPUT_DETAIL =
         'Some of the submitted data has an invalid type or value.';
@@ -118,7 +119,7 @@ class DefaultExceptionMapper implements ExceptionMapperInterface
                 'about:blank',
                 'Unprocessable Entity',
                 422,
-                self::MALFORMED_INPUT_DETAIL,
+                static::MALFORMED_INPUT_DETAIL,
             );
         }
 
