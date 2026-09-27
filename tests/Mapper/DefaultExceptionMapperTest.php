@@ -37,6 +37,17 @@ final class DefaultExceptionMapperTest extends TestCase
         self::assertSame('Forbidden', $this->mapper->map(AuthExceptions::forbidden())->getTitle());
     }
 
+    public function test_maps_slim_oauth_exceptions(): void
+    {
+        // Sin reconocerlas, /oauth/login/{provider-inexistente} y un state
+        // inválido en el callback devolvían 500.
+        self::assertSame(404, $this->mapper->map(new \Linkedcode\SlimOAuth\Exception\ProviderNotFoundException('x'))->getStatus());
+        self::assertSame(400, $this->mapper->map(new \Linkedcode\SlimOAuth\Exception\InvalidOAuthStateException('x'))->getStatus());
+        self::assertSame(401, $this->mapper->map(new \Linkedcode\SlimOAuth\Exception\InvalidRefreshTokenException('x'))->getStatus());
+        self::assertSame(502, $this->mapper->map(new \Linkedcode\SlimOAuth\Exception\TokenExchangeException('x'))->getStatus());
+        self::assertSame(400, $this->mapper->map(new \Linkedcode\SlimOAuth\Exception\OAuthException('x'))->getStatus());
+    }
+
     public function test_maps_kernel_not_found_to_404(): void
     {
         $problem = $this->mapper->map(KernelExceptions::notFound('address no existe'));

@@ -30,7 +30,8 @@
     },
     "files": [
       "tests/kernel-exception-stubs.php",
-      "tests/auth-exception-stubs.php"
+      "tests/auth-exception-stubs.php",
+      "tests/oauth-exception-stubs.php"
     ]
   },
   "scripts": {

@@ -68,6 +68,16 @@ class DefaultExceptionMapper implements ExceptionMapperInterface
         'Linkedcode\Middleware\Auth\Exception\ForbiddenException'    => [403, 'Forbidden'],
     ];
 
+    // Las subclases van antes que OAuthException porque la extienden.
+    private const OAUTH_EXCEPTIONS = [
+        'Linkedcode\SlimOAuth\Exception\ProviderNotFoundException'    => [404, 'Not Found'],
+        'Linkedcode\SlimOAuth\Exception\InvalidOAuthStateException'   => [400, 'Bad Request'],
+        'Linkedcode\SlimOAuth\Exception\InvalidRefreshTokenException' => [401, 'Unauthorized'],
+        // Falla el proveedor, no el cliente.
+        'Linkedcode\SlimOAuth\Exception\TokenExchangeException'       => [502, 'Bad Gateway'],
+        'Linkedcode\SlimOAuth\Exception\OAuthException'               => [400, 'Bad Request'],
+    ];
+
     public function map(Throwable $e): ProblemInterface
     {
         // Las excepciones de este paquete ya saben su status.
@@ -75,7 +85,7 @@ class DefaultExceptionMapper implements ExceptionMapperInterface
             return $e->toProblem();
         }
 
-        foreach (self::AUTH_EXCEPTIONS as $class => [$status, $title]) {
+        foreach ([...self::AUTH_EXCEPTIONS, ...self::OAUTH_EXCEPTIONS] as $class => [$status, $title]) {
             if ($e instanceof $class) {
                 return new Problem('about:blank', $title, $status, $e->getMessage());
             }
